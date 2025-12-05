@@ -57,6 +57,9 @@ export interface Voter {
   landmark?: string;
   nextHouseMobNo?: string;
   photo?: string;
+  boothNo?: string;
+  boothName?: string;
+  pollingStation?: string;
 }
 
 export interface SidebarItem {
@@ -64,4 +67,47 @@ export interface SidebarItem {
   label: string;
   icon: string;
   active?: boolean;
+}
+
+export interface HouseholdInsight {
+  id: string;
+  society: string;
+  address: string;
+  households: number;
+  voterCount: number;
+  coordinator: string;
+}
+
+export interface PollingStation {
+  id: string;
+  name: string;
+  address: string;
+  sector: string;
+  presidingOfficer: string;
+  contact: string;
+  totalVoters: number;
+  isCritical?: boolean;
+}
+
+export interface CampaignEvent {
+  id: string;
+  title: string;
+  date: string;
+  location: string;
+  status: 'Scheduled' | 'Completed';
+  coordinator: string;
+  description: string;
+}
+
+
+export interface PieSlice {
+  label: string;
+  value: number;
+  color: string;
+}
+
+export interface BarStat {
+  label: string;
+  value: number;
+  color: string;
 }

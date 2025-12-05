@@ -1,5 +1,6 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { GenderBoothData } from '@/types/election';
+import { BAR_ANIMATION_PROPS } from '@/lib/chart-animations';
 
 interface GenderBoothChartProps {
   data: GenderBoothData[];
@@ -40,8 +41,20 @@ const GenderBoothChart = ({ data }: GenderBoothChartProps) => {
               iconType="square"
               wrapperStyle={{ fontSize: '12px' }}
             />
-            <Bar dataKey="male" fill="hsl(var(--stat-blue))" name="Male" radius={[2, 2, 0, 0]} />
-            <Bar dataKey="female" fill="hsl(var(--stat-green))" name="Female" radius={[2, 2, 0, 0]} />
+            <Bar
+              dataKey="male"
+              fill="hsl(var(--stat-blue))"
+              name="Male"
+              radius={[2, 2, 0, 0]}
+              {...BAR_ANIMATION_PROPS}
+            />
+            <Bar
+              dataKey="female"
+              fill="hsl(var(--stat-green))"
+              name="Female"
+              radius={[2, 2, 0, 0]}
+              {...BAR_ANIMATION_PROPS}
+            />
           </BarChart>
         </ResponsiveContainer>
       </div>

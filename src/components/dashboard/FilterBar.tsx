@@ -2,169 +2,220 @@ import { useState } from 'react';
 import { Search, Filter, X, RotateCcw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import MultiSelect from './MultiSelect';
 import { Badge } from '@/components/ui/badge';
 
 export interface FilterValues {
   search: string;
-  ward: string;
-  booth: string;
-  gender: string;
-  caste: string;
-  ageGroup: string;
-  motherTongue: string;
-  voterType: string;
-  pollingStation: string;
-  society: string;
-  hasRationCard: string;
-  hasComplaint: string;
+  ward: string[];
+  booth: string[];
+  gender: string[];
+  caste: string[];
+  ageGroup: string[];
+  motherTongue: string[];
+  voterType: string[];
+  pollingStation: string[];
+  society: string[];
+  hasRationCard: string[];
+  hasComplaint: string[];
 }
+
+export type FilterOption = { value: string; label: string };
+
+export const defaultFilterOptions: Record<string, FilterOption[]> = {
+  ward: [
+    { value: 'all', label: 'All Wards' },
+    { value: '1', label: 'Ward 1 - Central' },
+    { value: '2', label: 'Ward 2 - North' },
+    { value: '3', label: 'Ward 3 - East' },
+    { value: '4', label: 'Ward 4 - South' },
+    { value: '5', label: 'Ward 5 - West' },
+    { value: '6', label: 'Ward 6 - Industrial' },
+    { value: '7', label: 'Ward 7 - Market' },
+    { value: '8', label: 'Ward 8 - Residential' },
+    { value: '9', label: 'Ward 9 - Hospital' },
+    { value: '10', label: 'Ward 10 - College' },
+  ],
+  booth: [
+    { value: 'all', label: 'All Booths' },
+    ...Array.from({ length: 19 }, (_, i) => ({
+      value: String(80 + i),
+      label: `Booth ${80 + i}`,
+    })),
+  ],
+  gender: [
+    { value: 'all', label: 'All Genders' },
+    { value: 'male', label: 'Male' },
+    { value: 'female', label: 'Female' },
+    { value: 'other', label: 'Other' },
+  ],
+  caste: [
+    { value: 'all', label: 'All Castes' },
+    { value: 'general', label: 'General' },
+    { value: 'obc', label: 'OBC' },
+    { value: 'sc', label: 'SC' },
+    { value: 'st', label: 'ST' },
+    { value: 'others', label: 'Others' },
+  ],
+  ageGroup: [
+    { value: 'all', label: 'All Ages' },
+    { value: '18-25', label: '18-25 (Youth)' },
+    { value: '26-35', label: '26-35' },
+    { value: '36-45', label: '36-45' },
+    { value: '46-55', label: '46-55' },
+    { value: '56-65', label: '56-65' },
+    { value: '65+', label: '65+ (Senior)' },
+  ],
+  motherTongue: [
+    { value: 'all', label: 'All Languages' },
+    { value: 'hindi', label: 'Hindi' },
+    { value: 'english', label: 'English' },
+    { value: 'urdu', label: 'Urdu' },
+    { value: 'punjabi', label: 'Punjabi' },
+    { value: 'bengali', label: 'Bengali' },
+    { value: 'tamil', label: 'Tamil' },
+    { value: 'telugu', label: 'Telugu' },
+    { value: 'marathi', label: 'Marathi' },
+    { value: 'gujarati', label: 'Gujarati' },
+    { value: 'other', label: 'Other' },
+  ],
+  voterType: [
+    { value: 'all', label: 'All Voters' },
+    { value: 'new', label: 'New Voters' },
+    { value: 'existing', label: 'Existing Voters' },
+    { value: 'transferred', label: 'Transferred' },
+    { value: 'deleted', label: 'Deleted' },
+  ],
+  pollingStation: [
+    { value: 'all', label: 'All Stations' },
+    { value: 'ps1', label: 'Government School' },
+    { value: 'ps2', label: 'Community Hall' },
+    { value: 'ps3', label: 'Municipal Office' },
+    { value: 'ps4', label: 'College Building' },
+    { value: 'ps5', label: 'Temple Complex' },
+  ],
+  society: [
+    { value: 'all', label: 'All Societies' },
+    { value: 'green-valley', label: 'Green Valley Society' },
+    { value: 'unity-apartments', label: 'Unity Apartments' },
+    { value: 'sunrise-colony', label: 'Sunrise Colony' },
+    { value: 'metro-heights', label: 'Metro Heights' },
+    { value: 'individual', label: 'Individual House' },
+  ],
+  hasRationCard: [
+    { value: 'all', label: 'All' },
+    { value: 'yes', label: 'Has Ration Card' },
+    { value: 'no', label: 'No Ration Card' },
+  ],
+  hasComplaint: [
+    { value: 'all', label: 'All' },
+    { value: 'yes', label: 'Has Complaint' },
+    { value: 'no', label: 'No Complaint' },
+  ],
+};
 
 interface FilterBarProps {
   filters: FilterValues;
   onFilterChange: (filters: FilterValues) => void;
   onClearFilters: () => void;
+  optionOverrides?: Partial<typeof defaultFilterOptions>;
 }
 
-const wardOptions = [
-  { value: 'all', label: 'All Wards' },
-  { value: '1', label: 'Ward 1 - Central' },
-  { value: '2', label: 'Ward 2 - North' },
-  { value: '3', label: 'Ward 3 - East' },
-  { value: '4', label: 'Ward 4 - South' },
-  { value: '5', label: 'Ward 5 - West' },
-  { value: '6', label: 'Ward 6 - Industrial' },
-  { value: '7', label: 'Ward 7 - Market' },
-  { value: '8', label: 'Ward 8 - Residential' },
-  { value: '9', label: 'Ward 9 - Hospital' },
-  { value: '10', label: 'Ward 10 - College' },
-];
-
-const boothOptions = [
-  { value: 'all', label: 'All Booths' },
-  ...Array.from({ length: 19 }, (_, i) => ({
-    value: String(80 + i),
-    label: `Booth ${80 + i}`,
-  })),
-];
-
-const genderOptions = [
-  { value: 'all', label: 'All Genders' },
-  { value: 'male', label: 'Male' },
-  { value: 'female', label: 'Female' },
-  { value: 'other', label: 'Other' },
-];
-
-const casteOptions = [
-  { value: 'all', label: 'All Castes' },
-  { value: 'general', label: 'General' },
-  { value: 'obc', label: 'OBC' },
-  { value: 'sc', label: 'SC' },
-  { value: 'st', label: 'ST' },
-  { value: 'others', label: 'Others' },
-];
-
-const ageGroupOptions = [
-  { value: 'all', label: 'All Ages' },
-  { value: '18-25', label: '18-25 (Youth)' },
-  { value: '26-35', label: '26-35' },
-  { value: '36-45', label: '36-45' },
-  { value: '46-55', label: '46-55' },
-  { value: '56-65', label: '56-65' },
-  { value: '65+', label: '65+ (Senior)' },
-];
-
-const motherTongueOptions = [
-  { value: 'all', label: 'All Languages' },
-  { value: 'hindi', label: 'Hindi' },
-  { value: 'english', label: 'English' },
-  { value: 'urdu', label: 'Urdu' },
-  { value: 'punjabi', label: 'Punjabi' },
-  { value: 'bengali', label: 'Bengali' },
-  { value: 'tamil', label: 'Tamil' },
-  { value: 'telugu', label: 'Telugu' },
-  { value: 'marathi', label: 'Marathi' },
-  { value: 'gujarati', label: 'Gujarati' },
-  { value: 'other', label: 'Other' },
-];
-
-const voterTypeOptions = [
-  { value: 'all', label: 'All Voters' },
-  { value: 'new', label: 'New Voters' },
-  { value: 'existing', label: 'Existing Voters' },
-  { value: 'transferred', label: 'Transferred' },
-  { value: 'deleted', label: 'Deleted' },
-];
-
-const pollingStationOptions = [
-  { value: 'all', label: 'All Stations' },
-  { value: 'ps1', label: 'Government School' },
-  { value: 'ps2', label: 'Community Hall' },
-  { value: 'ps3', label: 'Municipal Office' },
-  { value: 'ps4', label: 'College Building' },
-  { value: 'ps5', label: 'Temple Complex' },
-];
-
-const societyOptions = [
-  { value: 'all', label: 'All Societies' },
-  { value: 'green-valley', label: 'Green Valley Society' },
-  { value: 'unity-apartments', label: 'Unity Apartments' },
-  { value: 'sunrise-colony', label: 'Sunrise Colony' },
-  { value: 'metro-heights', label: 'Metro Heights' },
-  { value: 'individual', label: 'Individual House' },
-];
-
-const rationCardOptions = [
-  { value: 'all', label: 'All' },
-  { value: 'yes', label: 'Has Ration Card' },
-  { value: 'no', label: 'No Ration Card' },
-];
-
-const complaintOptions = [
-  { value: 'all', label: 'All' },
-  { value: 'yes', label: 'Has Complaint' },
-  { value: 'no', label: 'No Complaint' },
-];
-
-const FilterBar = ({ filters, onFilterChange, onClearFilters }: FilterBarProps) => {
+const FilterBar = ({ filters, onFilterChange, onClearFilters, optionOverrides }: FilterBarProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const wardOptions = optionOverrides?.ward ?? defaultFilterOptions.ward;
+  const boothOptions = optionOverrides?.booth ?? defaultFilterOptions.booth;
+  const genderOptions = optionOverrides?.gender ?? defaultFilterOptions.gender;
+  const casteOptions = optionOverrides?.caste ?? defaultFilterOptions.caste;
+  const ageGroupOptions = optionOverrides?.ageGroup ?? defaultFilterOptions.ageGroup;
+  const motherTongueOptions = optionOverrides?.motherTongue ?? defaultFilterOptions.motherTongue;
+  const voterTypeOptions = optionOverrides?.voterType ?? defaultFilterOptions.voterType;
+  const pollingStationOptions =
+    optionOverrides?.pollingStation ?? defaultFilterOptions.pollingStation;
+  const societyOptions = optionOverrides?.society ?? defaultFilterOptions.society;
+  const rationCardOptions = optionOverrides?.hasRationCard ?? defaultFilterOptions.hasRationCard;
+  const complaintOptions = optionOverrides?.hasComplaint ?? defaultFilterOptions.hasComplaint;
 
-  const handleChange = (key: keyof FilterValues, value: string) => {
-    onFilterChange({ ...filters, [key]: value });
+  const handleSearchChange = (value: string) => {
+    onFilterChange({ ...filters, search: value });
   };
 
-  const activeFiltersCount = Object.entries(filters).filter(
-    ([key, value]) => value && value !== 'all' && value !== ''
-  ).length;
+  const handleMultiChange = (key: keyof FilterValues, values: string[]) => {
+    onFilterChange({ ...filters, [key]: values });
+  };
+
+  const multiKeys: Array<Exclude<keyof FilterValues, 'search'>> = [
+    'ward',
+    'booth',
+    'gender',
+    'caste',
+    'ageGroup',
+    'motherTongue',
+    'voterType',
+    'pollingStation',
+    'society',
+    'hasRationCard',
+    'hasComplaint',
+  ];
+
+  const optionLookup: Record<keyof FilterValues, Map<string, string>> = {
+    search: new Map(),
+    ward: new Map(wardOptions.map((option) => [option.value, option.label])),
+    booth: new Map(boothOptions.map((option) => [option.value, option.label])),
+    gender: new Map(genderOptions.map((option) => [option.value, option.label])),
+    caste: new Map(casteOptions.map((option) => [option.value, option.label])),
+    ageGroup: new Map(ageGroupOptions.map((option) => [option.value, option.label])),
+    motherTongue: new Map(motherTongueOptions.map((option) => [option.value, option.label])),
+    voterType: new Map(voterTypeOptions.map((option) => [option.value, option.label])),
+    pollingStation: new Map(pollingStationOptions.map((option) => [option.value, option.label])),
+    society: new Map(societyOptions.map((option) => [option.value, option.label])),
+    hasRationCard: new Map(rationCardOptions.map((option) => [option.value, option.label])),
+    hasComplaint: new Map(complaintOptions.map((option) => [option.value, option.label])),
+  };
+
+  const formatSelectedValues = (key: keyof FilterValues, values: string[]) => {
+    const lookup = optionLookup[key];
+    return values.map((val) => lookup.get(val) ?? val).join(', ');
+  };
+
+  const activeFiltersCount =
+    (filters.search ? 1 : 0) +
+    multiKeys.filter((key) => filters[key].length > 0).length;
 
   const getActiveFilters = () => {
     const active: { key: string; label: string; value: string }[] = [];
     if (filters.search) active.push({ key: 'search', label: 'Search', value: filters.search });
-    if (filters.ward && filters.ward !== 'all') active.push({ key: 'ward', label: 'Ward', value: filters.ward });
-    if (filters.booth && filters.booth !== 'all') active.push({ key: 'booth', label: 'Booth', value: filters.booth });
-    if (filters.gender && filters.gender !== 'all') active.push({ key: 'gender', label: 'Gender', value: filters.gender });
-    if (filters.caste && filters.caste !== 'all') active.push({ key: 'caste', label: 'Caste', value: filters.caste });
-    if (filters.ageGroup && filters.ageGroup !== 'all') active.push({ key: 'ageGroup', label: 'Age', value: filters.ageGroup });
-    if (filters.motherTongue && filters.motherTongue !== 'all') active.push({ key: 'motherTongue', label: 'Language', value: filters.motherTongue });
-    if (filters.voterType && filters.voterType !== 'all') active.push({ key: 'voterType', label: 'Type', value: filters.voterType });
-    if (filters.pollingStation && filters.pollingStation !== 'all') active.push({ key: 'pollingStation', label: 'Station', value: filters.pollingStation });
-    if (filters.society && filters.society !== 'all') active.push({ key: 'society', label: 'Society', value: filters.society });
-    if (filters.hasRationCard && filters.hasRationCard !== 'all') active.push({ key: 'hasRationCard', label: 'Ration Card', value: filters.hasRationCard });
-    if (filters.hasComplaint && filters.hasComplaint !== 'all') active.push({ key: 'hasComplaint', label: 'Complaint', value: filters.hasComplaint });
+    multiKeys.forEach((key) => {
+      if (filters[key].length > 0) {
+        const label =
+          {
+            ward: 'Ward',
+            booth: 'Booth',
+            gender: 'Gender',
+            caste: 'Caste',
+            ageGroup: 'Age',
+            motherTongue: 'Language',
+            voterType: 'Type',
+            pollingStation: 'Station',
+            society: 'Society',
+            hasRationCard: 'Ration Card',
+            hasComplaint: 'Complaint',
+          }[key] || key;
+        active.push({
+          key,
+          label,
+          value: formatSelectedValues(key, filters[key]),
+        });
+      }
+    });
     return active;
   };
 
   const removeFilter = (key: string) => {
     if (key === 'search') {
-      handleChange('search', '');
+      handleSearchChange('');
     } else {
-      handleChange(key as keyof FilterValues, 'all');
+      handleMultiChange(key as keyof FilterValues, []);
     }
   };
 
@@ -178,66 +229,36 @@ const FilterBar = ({ filters, onFilterChange, onClearFilters }: FilterBarProps) 
           <Input
             placeholder="Search by Name, Voter ID, Phone, Address..."
             value={filters.search}
-            onChange={(e) => handleChange('search', e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="pl-10 bg-background"
           />
         </div>
 
-        {/* Ward Filter */}
-        <Select value={filters.ward} onValueChange={(v) => handleChange('ward', v)}>
-          <SelectTrigger className="w-[160px] bg-background">
-            <SelectValue placeholder="Select Ward" />
-          </SelectTrigger>
-          <SelectContent className="bg-card border border-border z-50">
-            {wardOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <MultiSelect
+          placeholder="Ward"
+          value={filters.ward}
+          options={wardOptions}
+          onChange={(values) => handleMultiChange('ward', values)}
+        />
+        <MultiSelect
+          placeholder="Booth"
+          value={filters.booth}
+          options={boothOptions}
+          onChange={(values) => handleMultiChange('booth', values)}
+        />
+        <MultiSelect
+          placeholder="Gender"
+          value={filters.gender}
+          options={genderOptions}
+          onChange={(values) => handleMultiChange('gender', values)}
+        />
 
-        {/* Booth Filter */}
-        <Select value={filters.booth} onValueChange={(v) => handleChange('booth', v)}>
-          <SelectTrigger className="w-[140px] bg-background">
-            <SelectValue placeholder="Select Booth" />
-          </SelectTrigger>
-          <SelectContent className="bg-card border border-border z-50 max-h-[300px]">
-            {boothOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* Gender Filter */}
-        <Select value={filters.gender} onValueChange={(v) => handleChange('gender', v)}>
-          <SelectTrigger className="w-[140px] bg-background">
-            <SelectValue placeholder="Gender" />
-          </SelectTrigger>
-          <SelectContent className="bg-card border border-border z-50">
-            {genderOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* Caste Filter */}
-        <Select value={filters.caste} onValueChange={(v) => handleChange('caste', v)}>
-          <SelectTrigger className="w-[140px] bg-background">
-            <SelectValue placeholder="Caste" />
-          </SelectTrigger>
-          <SelectContent className="bg-card border border-border z-50">
-            {casteOptions.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <MultiSelect
+          placeholder="Caste"
+          value={filters.caste}
+          options={casteOptions}
+          onChange={(values) => handleMultiChange('caste', values)}
+        />
 
         {/* More Filters Toggle */}
         <Button
@@ -273,103 +294,48 @@ const FilterBar = ({ filters, onFilterChange, onClearFilters }: FilterBarProps) 
       {isExpanded && (
         <div className="border-t border-border pt-3 mt-3">
           <div className="flex flex-wrap items-center gap-3">
-            {/* Age Group Filter */}
-            <Select value={filters.ageGroup} onValueChange={(v) => handleChange('ageGroup', v)}>
-              <SelectTrigger className="w-[150px] bg-background">
-                <SelectValue placeholder="Age Group" />
-              </SelectTrigger>
-              <SelectContent className="bg-card border border-border z-50">
-                {ageGroupOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Mother Tongue Filter */}
-            <Select value={filters.motherTongue} onValueChange={(v) => handleChange('motherTongue', v)}>
-              <SelectTrigger className="w-[160px] bg-background">
-                <SelectValue placeholder="Mother Tongue" />
-              </SelectTrigger>
-              <SelectContent className="bg-card border border-border z-50">
-                {motherTongueOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Voter Type Filter */}
-            <Select value={filters.voterType} onValueChange={(v) => handleChange('voterType', v)}>
-              <SelectTrigger className="w-[150px] bg-background">
-                <SelectValue placeholder="Voter Type" />
-              </SelectTrigger>
-              <SelectContent className="bg-card border border-border z-50">
-                {voterTypeOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Polling Station Filter */}
-            <Select value={filters.pollingStation} onValueChange={(v) => handleChange('pollingStation', v)}>
-              <SelectTrigger className="w-[170px] bg-background">
-                <SelectValue placeholder="Polling Station" />
-              </SelectTrigger>
-              <SelectContent className="bg-card border border-border z-50">
-                {pollingStationOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Society Filter */}
-            <Select value={filters.society} onValueChange={(v) => handleChange('society', v)}>
-              <SelectTrigger className="w-[170px] bg-background">
-                <SelectValue placeholder="Society" />
-              </SelectTrigger>
-              <SelectContent className="bg-card border border-border z-50">
-                {societyOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Ration Card Filter */}
-            <Select value={filters.hasRationCard} onValueChange={(v) => handleChange('hasRationCard', v)}>
-              <SelectTrigger className="w-[160px] bg-background">
-                <SelectValue placeholder="Ration Card" />
-              </SelectTrigger>
-              <SelectContent className="bg-card border border-border z-50">
-                {rationCardOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Complaint Filter */}
-            <Select value={filters.hasComplaint} onValueChange={(v) => handleChange('hasComplaint', v)}>
-              <SelectTrigger className="w-[150px] bg-background">
-                <SelectValue placeholder="Complaint" />
-              </SelectTrigger>
-              <SelectContent className="bg-card border border-border z-50">
-                {complaintOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <MultiSelect
+              placeholder="Age Group"
+              value={filters.ageGroup}
+              options={ageGroupOptions}
+              onChange={(values) => handleMultiChange('ageGroup', values)}
+            />
+            <MultiSelect
+              placeholder="Mother Tongue"
+              value={filters.motherTongue}
+              options={motherTongueOptions}
+              onChange={(values) => handleMultiChange('motherTongue', values)}
+            />
+            <MultiSelect
+              placeholder="Voter Type"
+              value={filters.voterType}
+              options={voterTypeOptions}
+              onChange={(values) => handleMultiChange('voterType', values)}
+            />
+            <MultiSelect
+              placeholder="Polling Station"
+              value={filters.pollingStation}
+              options={pollingStationOptions}
+              onChange={(values) => handleMultiChange('pollingStation', values)}
+            />
+            <MultiSelect
+              placeholder="Society"
+              value={filters.society}
+              options={societyOptions}
+              onChange={(values) => handleMultiChange('society', values)}
+            />
+            <MultiSelect
+              placeholder="Ration Card"
+              value={filters.hasRationCard}
+              options={rationCardOptions}
+              onChange={(values) => handleMultiChange('hasRationCard', values)}
+            />
+            <MultiSelect
+              placeholder="Complaint"
+              value={filters.hasComplaint}
+              options={complaintOptions}
+              onChange={(values) => handleMultiChange('hasComplaint', values)}
+            />
           </div>
         </div>
       )}

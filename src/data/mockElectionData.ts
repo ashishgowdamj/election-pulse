@@ -1,4 +1,4 @@
-import { VoterStats, CasteData, GenderBoothData, ElectionResult, Voter } from '@/types/election';
+import { VoterStats, CasteData, GenderBoothData, ElectionResult, Voter, PieSlice, BarStat } from '@/types/election';
 
 export const voterStats: VoterStats = {
   totalVoters: 96716,
@@ -144,4 +144,175 @@ export const sampleVoters: Voter[] = [
     phoneNo: '9876543215',
     complaint: 'Address update pending',
   },
+];
+
+export const householdInsights: HouseholdInsight[] = [
+  {
+    id: 'house-1',
+    society: 'Green Valley Society',
+    address: 'Block A, Ward 5',
+    households: 420,
+    voterCount: 1320,
+    coordinator: 'Mahesh Tiwari',
+  },
+  {
+    id: 'house-2',
+    society: 'Unity Apartments',
+    address: 'Sector 7, Ward 7',
+    households: 310,
+    voterCount: 980,
+    coordinator: 'Farha Naaz',
+  },
+  {
+    id: 'house-3',
+    society: 'Park View Residency',
+    address: 'Ring Road, Ward 3',
+    households: 265,
+    voterCount: 845,
+    coordinator: 'Gaurav Joshi',
+  },
+  {
+    id: 'house-4',
+    society: 'Riverfront Heights',
+    address: 'Ward 9 near Hospital Lane',
+    households: 380,
+    voterCount: 1115,
+    coordinator: 'Sanjana Raut',
+  },
+];
+
+export const pollingStations: PollingStation[] = [
+  {
+    id: 'ps-80',
+    name: 'Govt. Inter College',
+    address: 'Ward 5, Main Road',
+    sector: 'Central',
+    presidingOfficer: 'Dinesh Nautiyal',
+    contact: '0135-1234567',
+    totalVoters: 1420,
+  },
+  {
+    id: 'ps-81',
+    name: 'Public School Hall',
+    address: 'Ward 3, Park Road',
+    sector: 'East',
+    presidingOfficer: 'Vinita Mehra',
+    contact: '0135-1234599',
+    totalVoters: 1588,
+    isCritical: true,
+  },
+  {
+    id: 'ps-82',
+    name: 'Community Center',
+    address: 'Ward 7, Unity Nagar',
+    sector: 'West',
+    presidingOfficer: 'Parag Negi',
+    contact: '0135-1234511',
+    totalVoters: 1350,
+  },
+  {
+    id: 'ps-83',
+    name: 'Maharishi Vidya Mandir',
+    address: 'Ward 9, Riverfront',
+    sector: 'South',
+    presidingOfficer: 'Kusum Thapa',
+    contact: '0135-1234556',
+    totalVoters: 1624,
+  },
+];
+
+export const campaignEvents: CampaignEvent[] = [
+  {
+    id: 'event-1',
+    title: 'Booth Management Workshop',
+    date: '2024-07-28 10:00',
+    location: 'District Office',
+    status: 'Scheduled',
+    coordinator: 'Anil Gupta',
+    description: 'Training session for booth level volunteers.',
+  },
+  {
+    id: 'event-2',
+    title: 'Women Outreach Drive',
+    date: '2024-07-30 15:00',
+    location: 'Unity Apartments',
+    status: 'Scheduled',
+    coordinator: 'Shalini Rawal',
+    description: 'Door-to-door campaign targeting female voters.',
+  },
+  {
+    id: 'event-3',
+    title: 'Youth Townhall',
+    date: '2024-07-20 17:00',
+    location: 'City Auditorium',
+    status: 'Completed',
+    coordinator: 'Manish Kumar',
+    description: 'Interactive discussion with first-time voters.',
+  },
+];
+
+
+export const houseOwnership: PieSlice[] = [
+  { label: 'Lease', value: 33, color: '#facc15' },
+  { label: 'Own', value: 36, color: '#3b82f6' },
+  { label: 'Rent', value: 32, color: '#06b6d4' },
+];
+
+export const societyDistribution: PieSlice[] = [
+  { label: 'Balaji Layout', value: 16, color: '#2563eb' },
+  { label: 'BEML 3rd Stage', value: 14, color: '#93c5fd' },
+  { label: 'Channasandra', value: 18, color: '#f97316' },
+  { label: 'Green Meadows', value: 13, color: '#fed7aa' },
+  { label: 'Park View', value: 13, color: '#15803d' },
+  { label: 'Lalbagh Ext.', value: 15, color: '#86efac' },
+  { label: 'Riverfront', value: 11, color: '#ef4444' },
+];
+
+export const wardDistribution: PieSlice[] = [
+  { label: 'Ward 159', value: 32, color: '#06b6d4' },
+  { label: 'Ward 160', value: 32, color: '#ef4444' },
+  { label: 'Ward 161', value: 36, color: '#f59e0b' },
+];
+
+export const professionStats: BarStat[] = [
+  { label: 'Driver', value: 26, color: '#22c55e' },
+  { label: 'Electrician', value: 34, color: '#22c55e' },
+  { label: 'Engineer', value: 20, color: '#22c55e' },
+  { label: 'Housewife', value: 25, color: '#22c55e' },
+  { label: 'Labour', value: 22, color: '#22c55e' },
+  { label: 'Shopkeeper', value: 23, color: '#22c55e' },
+  { label: 'Student', value: 27, color: '#22c55e' },
+  { label: 'Tailor', value: 24, color: '#22c55e' },
+];
+
+export const educationStats: BarStat[] = [
+  { label: '10th', value: 26, color: '#3b82f6' },
+  { label: 'Degree', value: 40, color: '#3b82f6' },
+  { label: 'Diploma', value: 55, color: '#3b82f6' },
+  { label: 'LLB', value: 43, color: '#3b82f6' },
+  { label: 'PUC', value: 36, color: '#3b82f6' },
+];
+
+export const motherTongueDistribution: PieSlice[] = [
+  { label: 'Hindi', value: 24, color: '#2563eb' },
+  { label: 'Kannada', value: 30, color: '#93c5fd' },
+  { label: 'Tamil', value: 24, color: '#f97316' },
+  { label: 'Telugu', value: 22, color: '#fdba74' },
+];
+
+export const genderDistribution: PieSlice[] = [
+  { label: 'Female', value: 52, color: '#3b82f6' },
+  { label: 'Male', value: 48, color: '#06b6d4' },
+];
+
+export const ageDistribution: BarStat[] = [
+  { label: '1-5', value: 4, color: '#a855f7' },
+  { label: '11-15', value: 22, color: '#a855f7' },
+  { label: '21-25', value: 18, color: '#a855f7' },
+  { label: '31-35', value: 20, color: '#a855f7' },
+  { label: '41-45', value: 19, color: '#a855f7' },
+  { label: '51-55', value: 17, color: '#a855f7' },
+  { label: '61-65', value: 15, color: '#a855f7' },
+  { label: '71-75', value: 21, color: '#a855f7' },
+  { label: '81-85', value: 26, color: '#a855f7' },
 ];

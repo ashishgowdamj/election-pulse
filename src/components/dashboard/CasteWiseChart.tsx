@@ -1,6 +1,7 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { CasteData } from '@/types/election';
 import { RefreshCw } from 'lucide-react';
+import { PIE_ANIMATION_PROPS } from '@/lib/chart-animations';
 
 interface CasteWiseChartProps {
   data: CasteData[];
@@ -9,8 +10,8 @@ interface CasteWiseChartProps {
 
 const CasteWiseChart = ({ data, onRefresh }: CasteWiseChartProps) => {
   return (
-    <div className="bg-card rounded-lg p-6 shadow-lg">
-      <div className="flex items-center justify-between mb-6">
+    <div className="bg-card rounded-lg p-4 shadow-md">
+      <div className="flex items-center justify-between mb-4">
         <h3 className="font-heading font-semibold text-card-foreground">Caste Wise Reports</h3>
         {onRefresh && (
           <button
@@ -21,7 +22,7 @@ const CasteWiseChart = ({ data, onRefresh }: CasteWiseChartProps) => {
           </button>
         )}
       </div>
-      <div className="h-80">
+      <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -32,6 +33,7 @@ const CasteWiseChart = ({ data, onRefresh }: CasteWiseChartProps) => {
               outerRadius={90}
               paddingAngle={2}
               dataKey="value"
+              {...PIE_ANIMATION_PROPS}
             >
               {data.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />

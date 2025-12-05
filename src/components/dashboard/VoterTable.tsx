@@ -11,13 +11,14 @@ import { User } from 'lucide-react';
 
 interface VoterTableProps {
   voters: Voter[];
+  title?: string;
 }
 
-const VoterTable = ({ voters }: VoterTableProps) => {
+const VoterTable = ({ voters, title = 'Voter Registry' }: VoterTableProps) => {
   return (
     <div className="bg-card rounded-lg shadow-md overflow-hidden">
       <div className="p-4 border-b border-border">
-        <h3 className="font-heading font-semibold text-card-foreground">Voter Registry</h3>
+        <h3 className="font-heading font-semibold text-card-foreground">{title}</h3>
       </div>
       <div className="overflow-x-auto">
         <Table>

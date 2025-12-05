@@ -1,8 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Users, User, UserCircle2, HelpCircle, Home, Copy, Building2, Calendar } from 'lucide-react';
+import { Building2 } from 'lucide-react';
 import Sidebar from '@/components/dashboard/Sidebar';
 import StatCard from '@/components/dashboard/StatCard';
-import SideStatCard from '@/components/dashboard/SideStatCard';
 import CasteWiseChart from '@/components/dashboard/CasteWiseChart';
 import VoterTable from '@/components/dashboard/VoterTable';
 import FilterBar, { FilterValues, defaultFilterOptions, FilterOption } from '@/components/dashboard/FilterBar';
@@ -11,13 +10,7 @@ import {
   casteData,
   genderBoothData,
   sampleVoters,
-  bloDirectory,
-  duplicateHouseholds,
   householdInsights,
-  pollingStations,
-  campaignEvents,
-  communicationGroups,
-  messageTemplates,
   houseOwnership,
   societyDistribution,
   wardDistribution,
@@ -28,21 +21,10 @@ import {
   ageDistribution,
 } from '@/data/mockElectionData';
 import { toast } from '@/hooks/use-toast';
-import SearchVoterPanel from '@/components/dashboard/SearchVoterPanel';
-import BloDirectory from '@/components/dashboard/BloDirectory';
-import DuplicateVoterPanel from '@/components/dashboard/DuplicateVoterPanel';
 import GenderOverviewPanel from '@/components/dashboard/GenderOverviewPanel';
 import HouseholdInsights from '@/components/dashboard/HouseholdInsights';
-import PollingStationList from '@/components/dashboard/PollingStationList';
-import CommunicationPanel from '@/components/dashboard/CommunicationPanel';
-import EventTimeline from '@/components/dashboard/EventTimeline';
 import DataInsightPanel from '@/components/dashboard/DataInsightPanel';
-import {
-  useCasteBreakdown,
-  useDashboardStats,
-  useGenderAreaBreakdown,
-  useVoters,
-} from '@/hooks/use-dashboard-data';
+import { useCasteBreakdown, useDashboardStats, useGenderAreaBreakdown, useVoters } from '@/hooks/use-dashboard-data';
 
 const slugify = (value: string) =>
   value
@@ -293,6 +275,21 @@ const Index = () => {
   const isFetching =
     statsQuery.isFetching || casteQuery.isFetching || genderQuery.isFetching || voterQuery.isFetching;
 
+  const wardCount = useMemo(() => {
+    const base = hasLiveVoters ? voterQuery.data?.data ?? [] : filteredSampleVoters;
+    const unique = new Set(base.map((voter) => voter.wardNo).filter(Boolean));
+    if (unique.size > 0) {
+      return unique.size;
+    }
+
+    const fallbackUnique = new Set(sampleVoters.map((voter) => voter.wardNo).filter(Boolean));
+    if (fallbackUnique.size > 0) {
+      return fallbackUnique.size;
+    }
+
+    return wardDistribution.length;
+  }, [hasLiveVoters, voterQuery.data, filteredSampleVoters]);
+
   const handleFilterChange = (newFilters: FilterValues) => {
     setFilters(newFilters);
     toast({
@@ -334,141 +331,21 @@ const Index = () => {
     }
   };
 
-  const sectionMeta: Record<string, { label: string; title: string }> = {
-    dashboard: {
-      label: 'Real-time Monitoring',
-      title: 'Election Management Dashboard',
-    },
-    'search-voter': {
-      label: 'Citizen Lookup',
-      title: 'Search Voter Records',
-    },
-    'search-blo': {
-      label: 'Team Operations',
-      title: 'Booth Level Officer Directory',
-    },
-    'duplicate-voters': {
-      label: 'Data Hygiene',
-      title: 'Duplicate Voter Alerts',
-    },
-    'voter-gender': {
-      label: 'Demographic Insights',
-      title: 'Gender & Booth Analysis',
-    },
-    'voter-house': {
-      label: 'Society Level View',
-      title: 'Household Voter Count',
-    },
-    'polling-station': {
-      label: 'Logistics Overview',
-      title: 'Polling Station List',
-    },
-    'send-sms': {
-      label: 'Communication Suite',
-      title: 'Send SMS Broadcast',
-    },
-    'send-mail': {
-      label: 'Communication Suite',
-      title: 'Send Email Broadcast',
-    },
-    'event-list': {
-      label: 'Field Coordination',
-      title: 'Campaign Events & Rallies',
-    },
-  };
-
-  const activeSection = sectionMeta[activeMenuItem] ?? sectionMeta.dashboard;
+  const filterControls = (
+    <FilterBar
+      filters={filters}
+      onFilterChange={handleFilterChange}
+      onClearFilters={handleClearFilters}
+      optionOverrides={filterOptionOverrides}
+    />
+  );
 
   const renderDashboard = () => (
     <>
-            <FilterBar
-              filters={filters}
-              onFilterChange={handleFilterChange}
-              onClearFilters={handleClearFilters}
-              optionOverrides={filterOptionOverrides}
-            />
+      {filterControls}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 mt-6">
-        <StatCard
-          value={statsDisplay.totalVoters}
-          label="Total Voter"
-          variant="red"
-          icon={<Users className="w-8 h-8" />}
-          onRefresh={() => handleRefresh('totalVoters')}
-        />
-        <StatCard
-          value={statsDisplay.maleVoters}
-          label="Male Voter"
-          variant="blue"
-          icon={<User className="w-8 h-8" />}
-          onRefresh={() => handleRefresh('maleVoters')}
-        />
-        <StatCard
-          value={statsDisplay.femaleVoters}
-          label="Female Voter"
-          variant="green"
-          icon={<UserCircle2 className="w-8 h-8" />}
-          onRefresh={() => handleRefresh('femaleVoters')}
-        />
-        <StatCard
-          value={statsDisplay.otherVoters}
-          label="Other Voter"
-          variant="orange"
-          icon={<HelpCircle className="w-8 h-8" />}
-          onRefresh={() => handleRefresh('otherVoters')}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-              <div className="lg:col-span-2 space-y-6">
-                <CasteWiseChart data={casteDataForCharts} onRefresh={() => handleRefresh('caste')} />
-              </div>
-
-        <div className="space-y-4">
-          <SideStatCard
-            value={statsDisplay.youthVoters}
-            label="Youth Voter"
-            icon={<Users className="w-5 h-5" />}
-            variant="orange"
-          />
-          <SideStatCard
-            value={statsDisplay.duplicateVoters}
-            label="Duplicate Voter"
-            icon={<Copy className="w-5 h-5" />}
-            variant="red"
-          />
-          <SideStatCard
-            value={statsDisplay.voterCountOnHouse}
-            label="Voter Count on House"
-            icon={<Home className="w-5 h-5" />}
-            variant="teal"
-          />
-          <SideStatCard
-            value={statsDisplay.totalBooth}
-            label="Total Booth"
-            icon={<Building2 className="w-5 h-5" />}
-            variant="yellow"
-          />
-          <SideStatCard
-            value={statsDisplay.totalEvent}
-            label="Total Event"
-            icon={<Calendar className="w-5 h-5" />}
-            variant="green"
-          />
-        </div>
-      </div>
-
-      <VoterTable voters={voters} title={hasLiveVoters ? 'Live Voter Registry' : 'Sample Voter Registry'} />
-
-      <div className="mt-4 text-sm text-muted-foreground text-center">
-        {hasLiveVoters ? (
-          <span>
-            Showing {voters.length} of {totalVoterCount} voters based on applied filters
-            {isFetching ? ' — refreshing…' : ''}
-          </span>
-        ) : (
-          <span>Showing {filteredSampleVoters.length} of {sampleVoters.length} voters based on applied filters</span>
-        )}
+      <div className="mb-6">
+        <CasteWiseChart data={casteDataForCharts} onRefresh={() => handleRefresh('caste')} />
       </div>
 
       <section className="mt-10 space-y-4">
@@ -496,25 +373,33 @@ const Index = () => {
 
   const renderContent = () => {
     switch (activeMenuItem) {
-      case 'search-voter':
-        return <SearchVoterPanel voters={voters} />;
-      case 'search-blo':
-        return <BloDirectory officers={bloDirectory} />;
-      case 'duplicate-voters':
-        return <DuplicateVoterPanel records={duplicateHouseholds} />;
       case 'voter-gender':
         return <GenderOverviewPanel data={genderDataForCharts} stats={statsDisplay} />;
       case 'voter-house':
         return <HouseholdInsights insights={householdInsights} />;
-      case 'polling-station':
-        return <PollingStationList stations={pollingStations} />;
-      case 'send-sms':
-        return <CommunicationPanel channel="sms" groups={communicationGroups} templates={messageTemplates} />;
-      case 'send-mail':
-        return <CommunicationPanel channel="email" groups={communicationGroups} templates={messageTemplates} />;
-      case 'event-list':
-        return <EventTimeline events={campaignEvents} />;
-      case 'dashboard':
+      case 'live-voters':
+        return (
+          <>
+            {filterControls}
+            <VoterTable
+              voters={voters}
+              title={hasLiveVoters ? 'Live Voter Registry' : 'Sample Voter Registry'}
+            />
+            <div className="mt-4 text-sm text-muted-foreground text-center">
+              {hasLiveVoters ? (
+                <span>
+                  Showing {voters.length} of {totalVoterCount} voters based on applied filters
+                  {isFetching ? ' — refreshing…' : ''}
+                </span>
+              ) : (
+                <span>
+                  Displaying {voters.length} sample voters based on applied filters
+                  {isFetching ? ' — refreshing…' : ''}
+                </span>
+              )}
+            </div>
+          </>
+        );
       default:
         return renderDashboard();
     }
@@ -528,25 +413,102 @@ const Index = () => {
         collapsed={isSidebarCollapsed}
         onToggle={() => setIsSidebarCollapsed((prev) => !prev)}
       />
-
-      <main className="flex-1 p-6 overflow-auto">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6 -mt-2">
-          <img
-            src="/munirathna.jpg"
-            alt="Munirathna"
-            className="w-16 h-16 rounded-full object-cover shadow-lg"
-          />
-          <div className="flex justify-end">
+      <div className="flex-1 flex flex-col bg-background">
+        <header className="relative flex items-center justify-between px-6 py-6 bg-white border-b border-border shadow-sm overflow-hidden">
+          <div className="flex items-center gap-3">
+            <div className="w-32 h-32 rounded-full overflow-hidden border border-border shadow-md">
+              <img
+                src="/munirathna-header-left.jpeg"
+                alt="Munirathna"
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </div>
+          <div className="flex-1 text-center">
+            <p className="text-2xl font-semibold tracking-wide text-foreground">Man of Humanity</p>
+          </div>
+          <div className="flex items-center justify-end">
             <img
-              src="/bjp.webp"
-              alt="BJP logo"
-              className="w-[17.375rem] h-auto object-contain shadow-none -mt-5"
+              src="/bjp-header-right.jpeg"
+              alt="BJP Logo"
+              className="h-32 w-auto object-contain"
+            />
+          </div>
+          <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-[780px] pointer-events-none">
+            <img
+              src="/header-watermark-arch.jpeg"
+              alt="Arch motif"
+              className="w-full h-full object-cover opacity-[1.04]"
+              aria-hidden="true"
             />
           </div>
         </header>
 
-        {renderContent()}
-      </main>
+        {activeMenuItem === 'dashboard' && (
+          <section className="px-6 py-4 border-b border-border bg-background mt-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <StatCard
+                value={statsDisplay.totalVoters}
+                label="Total Voter"
+                variant="orange"
+                icon={
+                  <img
+                    src="https://cdn.pixabay.com/photo/2017/09/07/08/47/people-2728756_960_720.jpg"
+                    alt="Total voters"
+                    className="w-12 h-12 rounded-full object-cover border-2 border-white/50 shadow-md"
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                  />
+                }
+                onRefresh={() => handleRefresh('total voters')}
+              />
+              <StatCard
+                value={statsDisplay.maleVoters}
+                label="Male Voter"
+                variant="blue"
+                icon={
+                  <img
+                    src="https://cdn.pixabay.com/photo/2017/06/20/19/22/indian-2424994_960_720.jpg"
+                    alt="Male voters"
+                    className="w-12 h-12 rounded-full object-cover border-2 border-white/50 shadow-md"
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                  />
+                }
+                onRefresh={() => handleRefresh('male voters')}
+              />
+              <StatCard
+                value={statsDisplay.femaleVoters}
+                label="Female Voter"
+                variant="green"
+                icon={
+                  <img
+                    src="https://cdn.pixabay.com/photo/2017/08/06/13/12/portrait-2590898_960_720.jpg"
+                    alt="Female voters"
+                    className="w-12 h-12 rounded-full object-cover border-2 border-white/50 shadow-md"
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                  />
+                }
+                onRefresh={() => handleRefresh('female voters')}
+              />
+              <StatCard
+                value={wardCount}
+                label="Total Ward"
+                variant="teal"
+                icon={<Building2 className="w-8 h-8 opacity-90" />}
+                onRefresh={() => handleRefresh('ward count')}
+              />
+            </div>
+          </section>
+        )}
+
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-6 space-y-6 mt-6">
+            {renderContent()}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
