@@ -2,29 +2,18 @@ import { useMemo, useState } from 'react';
 import { Building2 } from 'lucide-react';
 import Sidebar from '@/components/dashboard/Sidebar';
 import StatCard from '@/components/dashboard/StatCard';
-import CasteWiseChart from '@/components/dashboard/CasteWiseChart';
+import SuperInsightChart from '@/components/dashboard/SuperInsightChart';
 import VoterTable from '@/components/dashboard/VoterTable';
 import FilterBar, { FilterValues, defaultFilterOptions, FilterOption } from '@/components/dashboard/FilterBar';
-import {
-  voterStats,
-  casteData,
-  genderBoothData,
-  sampleVoters,
-  householdInsights,
-  houseOwnership,
-  societyDistribution,
-  wardDistribution,
-  professionStats,
-  educationStats,
-  motherTongueDistribution,
-  genderDistribution as genderPieDistribution,
-  ageDistribution,
-} from '@/data/mockElectionData';
 import { toast } from '@/hooks/use-toast';
 import GenderOverviewPanel from '@/components/dashboard/GenderOverviewPanel';
-import HouseholdInsights from '@/components/dashboard/HouseholdInsights';
-import DataInsightPanel from '@/components/dashboard/DataInsightPanel';
+import WardBarChart from '@/components/dashboard/WardBarChart';
+import MiniCasteChart from '@/components/dashboard/MiniCasteChart';
+import MiniLanguageChart from '@/components/dashboard/MiniLanguageChart';
+import MiniAgeChart from '@/components/dashboard/MiniAgeChart';
 import { useCasteBreakdown, useDashboardStats, useGenderAreaBreakdown, useVoters } from '@/hooks/use-dashboard-data';
+import type { VoterStats } from '@/types/election';
+import { buildInsightData } from '@/lib/insight-builder';
 
 const slugify = (value: string) =>
   value
@@ -60,6 +49,18 @@ const initialFilters: FilterValues = {
   hasComplaint: [],
 };
 
+const emptyStats: VoterStats = {
+  totalVoters: 0,
+  maleVoters: 0,
+  femaleVoters: 0,
+  otherVoters: 0,
+  youthVoters: 0,
+  duplicateVoters: 0,
+  voterCountOnHouse: 0,
+  totalBooth: 0,
+  totalEvent: 0,
+};
+
 const Index = () => {
   const [activeMenuItem, setActiveMenuItem] = useState('dashboard');
   const [filters, setFilters] = useState<FilterValues>({ ...initialFilters });
@@ -69,106 +70,11 @@ const Index = () => {
   const casteQuery = useCasteBreakdown(filters);
   const genderQuery = useGenderAreaBreakdown(filters);
   const voterQuery = useVoters(filters);
-
-  const filteredSampleVoters = useMemo(() => {
-    return sampleVoters.filter((voter) => {
-      if (filters.search) {
-        const searchLower = filters.search.toLowerCase();
-        const matchesSearch =
-          voter.name.toLowerCase().includes(searchLower) ||
-          voter.voterId.toLowerCase().includes(searchLower) ||
-          voter.phoneNo?.toLowerCase().includes(searchLower) ||
-          voter.newAddress.toLowerCase().includes(searchLower) ||
-          voter.cardNo.toLowerCase().includes(searchLower);
-        if (!matchesSearch) return false;
-      }
-
-      if (filters.ward.length && !filters.ward.includes(voter.wardNo)) {
-        return false;
-      }
-
-      if (filters.booth.length) {
-        const boothValue = voter.boothNo ?? voter.boothName ?? (voter as { booth?: string }).booth;
-        if (!boothValue || !filters.booth.includes(String(boothValue))) {
-          return false;
-        }
-      }
-
-      if (filters.gender.length && !filters.gender.includes(voter.gender.toLowerCase())) {
-        return false;
-      }
-
-      if (filters.caste.length && (!voter.caste || !filters.caste.includes(voter.caste.toLowerCase()))) {
-        return false;
-      }
-
-      if (filters.ageGroup.length) {
-        const age = voter.age;
-        const matchesAgeGroup = filters.ageGroup.some((range) => {
-          switch (range) {
-            case '18-25':
-              return age >= 18 && age <= 25;
-            case '26-35':
-              return age >= 26 && age <= 35;
-            case '36-45':
-              return age >= 36 && age <= 45;
-            case '46-55':
-              return age >= 46 && age <= 55;
-            case '56-65':
-              return age >= 56 && age <= 65;
-            case '65+':
-              return age >= 65;
-            default:
-              return true;
-          }
-        });
-        if (!matchesAgeGroup) return false;
-      }
-
-      if (
-        filters.motherTongue.length &&
-        (!voter.motherTongue || !filters.motherTongue.includes(voter.motherTongue.toLowerCase()))
-      ) {
-        return false;
-      }
-
-      if (filters.hasRationCard.length) {
-        const hasCard = !!voter.rationCardNo;
-        if (hasCard && !filters.hasRationCard.includes('yes')) return false;
-        if (!hasCard && !filters.hasRationCard.includes('no')) return false;
-      }
-
-      if (filters.hasComplaint.length) {
-        const hasComplaint = !!voter.complaint;
-        if (hasComplaint && !filters.hasComplaint.includes('yes')) return false;
-        if (!hasComplaint && !filters.hasComplaint.includes('no')) return false;
-      }
-
-      if (filters.society.length) {
-        const societySlug = voter.societyName ? slugify(voter.societyName) : 'individual';
-        if (!filters.society.includes(societySlug)) {
-          return false;
-        }
-      }
-
-      if (filters.pollingStation.length) {
-        const stationSlug = voter.pollingStation ? slugify(voter.pollingStation) : undefined;
-        if (!stationSlug || !filters.pollingStation.includes(stationSlug)) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [filters]);
-
-  const hasLiveVoters =
-    Boolean(voterQuery.data?.data && voterQuery.data.data.length > 0);
-
-  const votersForOptions = useMemo(
-    () => (hasLiveVoters ? voterQuery.data?.data ?? [] : sampleVoters),
-    [hasLiveVoters, voterQuery.data]
-  );
+  const overallStatsQuery = useDashboardStats(initialFilters);
+  const overallVoterQuery = useVoters(initialFilters);
+  const voters = voterQuery.data?.data ?? [];
+  const heroVoters = overallVoterQuery.data?.data ?? [];
+  const totalVoterCount = voterQuery.data?.total ?? voters.length;
 
   const filterOptionOverrides = useMemo(() => {
     const wardMap = new Map<string, string>();
@@ -179,7 +85,7 @@ const Index = () => {
     const boothMap = new Map<string, string>();
     const stationMap = new Map<string, string>();
 
-    votersForOptions.forEach((voter) => {
+    voters.forEach((voter) => {
       if (voter.wardNo && !wardMap.has(voter.wardNo)) {
         const label = voter.wardName
           ? `${voter.wardName} (Ward ${voter.wardNo})`
@@ -245,50 +151,26 @@ const Index = () => {
       booth: mergeOptions(defaultFilterOptions.booth, mapToOptions(boothMap)),
       pollingStation: mergeOptions(defaultFilterOptions.pollingStation, mapToOptions(stationMap)),
     } as Partial<typeof defaultFilterOptions>;
-  }, [votersForOptions]);
+  }, [voters]);
 
-  const fallbackStats = useMemo(() => {
-    const total = filteredSampleVoters.length;
-    if (!sampleVoters.length) {
-      return voterStats;
-    }
-    const ratio = total / sampleVoters.length;
-    return {
-      ...voterStats,
-      totalVoters: Math.round(voterStats.totalVoters * ratio),
-      maleVoters: Math.round(voterStats.maleVoters * ratio),
-      femaleVoters: Math.round(voterStats.femaleVoters * ratio),
-      otherVoters: Math.round(voterStats.otherVoters * ratio),
-      youthVoters: Math.round(voterStats.youthVoters * ratio),
-      duplicateVoters: Math.round(voterStats.duplicateVoters * ratio),
-      voterCountOnHouse: Math.round(voterStats.voterCountOnHouse * ratio),
-      totalBooth: voterStats.totalBooth,
-      totalEvent: voterStats.totalEvent,
-    };
-  }, [filteredSampleVoters]);
-
-  const statsDisplay = statsQuery.data ?? fallbackStats;
-  const casteDataForCharts = casteQuery.data ?? casteData;
-  const genderDataForCharts = genderQuery.data ?? genderBoothData;
-  const voters = hasLiveVoters ? voterQuery.data?.data ?? [] : filteredSampleVoters;
-  const totalVoterCount = hasLiveVoters ? voterQuery.data?.total ?? 0 : sampleVoters.length;
+  const statsDisplay = statsQuery.data ?? emptyStats;
+  const heroStatsDisplay = overallStatsQuery.data ?? emptyStats;
+  const casteDataForCharts = casteQuery.data ?? [];
+  const genderDataForCharts = genderQuery.data ?? [];
+  const insightData = useMemo(() => buildInsightData(voters, statsDisplay), [voters, statsDisplay]);
+  const heroInsightData = useMemo(() => buildInsightData(heroVoters, heroStatsDisplay), [heroVoters, heroStatsDisplay]);
+  const casteDistributionForInsights = casteDataForCharts.length > 0 ? casteDataForCharts : insightData.casteBreakdown;
+  const hasVoterData = voters.length > 0;
   const isFetching =
     statsQuery.isFetching || casteQuery.isFetching || genderQuery.isFetching || voterQuery.isFetching;
 
   const wardCount = useMemo(() => {
-    const base = hasLiveVoters ? voterQuery.data?.data ?? [] : filteredSampleVoters;
-    const unique = new Set(base.map((voter) => voter.wardNo).filter(Boolean));
+    const unique = new Set(voters.map((voter) => voter.wardNo).filter(Boolean));
     if (unique.size > 0) {
       return unique.size;
     }
-
-    const fallbackUnique = new Set(sampleVoters.map((voter) => voter.wardNo).filter(Boolean));
-    if (fallbackUnique.size > 0) {
-      return fallbackUnique.size;
-    }
-
-    return wardDistribution.length;
-  }, [hasLiveVoters, voterQuery.data, filteredSampleVoters]);
+    return statsDisplay.totalBooth;
+  }, [voters, statsDisplay.totalBooth]);
 
   const handleFilterChange = (newFilters: FilterValues) => {
     setFilters(newFilters);
@@ -329,6 +211,26 @@ const Index = () => {
         variant: 'destructive',
       });
     }
+
+    const handleHeroRefresh = async (section: string) => {
+      toast({
+        title: 'Refreshing Data',
+        description: `Updating ${section} statistics...`,
+      });
+      try {
+        await Promise.all([overallStatsQuery.refetch(), overallVoterQuery.refetch()]);
+        toast({
+          title: 'Data Updated',
+          description: `${section} statistics refreshed successfully.`,
+        });
+      } catch (error) {
+        toast({
+          title: 'Refresh Failed',
+          description: error instanceof Error ? error.message : 'Unable to pull latest data.',
+          variant: 'destructive',
+        });
+      }
+    };
   };
 
   const filterControls = (
@@ -342,60 +244,62 @@ const Index = () => {
 
   const renderDashboard = () => (
     <>
-      {filterControls}
-
-      <div className="mb-6">
-        <CasteWiseChart data={casteDataForCharts} onRefresh={() => handleRefresh('caste')} />
+      <div className="grid gap-3 w-full lg:grid-cols-2 xl:grid-cols-4">
+        <div className="h-full">
+          <WardBarChart
+            data={heroInsightData.wardDistribution}
+            onRefresh={() => handleHeroRefresh('ward distribution')}
+          />
+        </div>
+        <div className="h-full">
+          <MiniCasteChart
+            data={heroInsightData.casteBreakdown}
+            onRefresh={() => handleHeroRefresh('caste distribution')}
+          />
+        </div>
+        <div className="h-full">
+          <MiniLanguageChart
+            data={heroInsightData.motherTongueDistribution}
+            onRefresh={() => handleHeroRefresh('language distribution')}
+          />
+        </div>
+        <div className="h-full">
+          <MiniAgeChart
+            data={heroInsightData.ageDistribution}
+            onRefresh={() => handleHeroRefresh('age distribution')}
+          />
+        </div>
       </div>
 
-      <section className="mt-10 space-y-4">
-        <div>
-          <p className="text-sm uppercase tracking-[0.5em] text-muted-foreground">Field Intelligence</p>
-          <h2 className="text-2xl font-semibold text-foreground">Constituency Insight Board</h2>
-          <p className="text-sm text-muted-foreground">
-            Visualize ownership patterns, socio-economic spread, education, age, and language mix similar to the provided reference layouts.
-          </p>
-        </div>
-        <DataInsightPanel
-          houseOwnership={houseOwnership}
-          societyDistribution={societyDistribution}
-          wardDistribution={wardDistribution}
-          professionStats={professionStats}
-          educationStats={educationStats}
-          motherTongueDistribution={motherTongueDistribution}
-          genderDistribution={genderPieDistribution}
-          ageDistribution={ageDistribution}
-          casteDistribution={casteDataForCharts}
+      <div className="mt-3">{filterControls}</div>
+
+      <section className="mt-6">
+        <SuperInsightChart
+          data={casteDistributionForInsights}
+          onRefresh={() => handleRefresh('insight spotlight')}
+          title="Constituency Composition"
+          description="Dive into filtered caste distribution using pie, donut, bar, area, or radar views. Switch chart types to compare how each community contributes."
         />
       </section>
+
     </>
   );
 
   const renderContent = () => {
     switch (activeMenuItem) {
-      case 'voter-gender':
-        return <GenderOverviewPanel data={genderDataForCharts} stats={statsDisplay} />;
-      case 'voter-house':
-        return <HouseholdInsights insights={householdInsights} />;
       case 'live-voters':
         return (
           <>
             {filterControls}
-            <VoterTable
-              voters={voters}
-              title={hasLiveVoters ? 'Live Voter Registry' : 'Sample Voter Registry'}
-            />
+            <VoterTable voters={voters} title="Voters Data" />
             <div className="mt-4 text-sm text-muted-foreground text-center">
-              {hasLiveVoters ? (
+              {hasVoterData ? (
                 <span>
                   Showing {voters.length} of {totalVoterCount} voters based on applied filters
                   {isFetching ? ' — refreshing…' : ''}
                 </span>
               ) : (
-                <span>
-                  Displaying {voters.length} sample voters based on applied filters
-                  {isFetching ? ' — refreshing…' : ''}
-                </span>
+                <span>No voter records were returned for the selected filters.</span>
               )}
             </div>
           </>
@@ -406,46 +310,52 @@ const Index = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen bg-transparent">
       <Sidebar
         activeItem={activeMenuItem}
         onItemClick={setActiveMenuItem}
         collapsed={isSidebarCollapsed}
         onToggle={() => setIsSidebarCollapsed((prev) => !prev)}
       />
-      <div className="flex-1 flex flex-col bg-background">
-        <header className="relative flex items-center justify-between px-6 py-6 bg-white border-b border-border shadow-sm overflow-hidden">
-          <div className="flex items-center gap-3">
-            <div className="w-32 h-32 rounded-full overflow-hidden border border-border shadow-md">
-              <img
-                src="/munirathna-header-left.jpeg"
-                alt="Munirathna"
-                className="w-full h-full object-cover"
-              />
-            </div>
-          </div>
-          <div className="flex-1 text-center">
-            <p className="text-2xl font-semibold tracking-wide text-foreground">Man of Humanity</p>
-          </div>
-          <div className="flex items-center justify-end">
+      <div className="flex-1 flex flex-col bg-transparent">
+        <header className="relative bg-white border-b border-border shadow-sm overflow-hidden">
+          <div className="absolute inset-0 pointer-events-none">
             <img
-              src="/bjp-header-right.jpeg"
-              alt="BJP Logo"
-              className="h-32 w-auto object-contain"
-            />
-          </div>
-          <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 w-[780px] pointer-events-none">
-            <img
-              src="/header-watermark-arch.jpeg"
+              src="/header-watermark-arch.png"
               alt="Arch motif"
-              className="w-full h-full object-cover opacity-[1.04]"
+              className="w-full h-full object-cover opacity-[0.5]"
               aria-hidden="true"
             />
+          </div>
+          <div className="relative z-10 flex items-center justify-between px-6 py-6">
+            <div className="flex items-center gap-3">
+              <div className="w-32 h-32 rounded-full overflow-hidden border border-border shadow-md">
+                <img
+                  src="/munirathna-header-left.jpeg"
+                  alt="Munirathna"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
+            <div className="flex-1 text-center">
+              <p className="text-5xl font-black tracking-[0.25em] uppercase text-foreground [text-shadow:_0_0_12px_rgba(255,165,0,0.45)]">
+                Man of Humanity
+              </p>
+            </div>
+            <div className="flex items-center justify-end">
+              <div className="w-32 h-32 rounded-full overflow-hidden border border-border shadow-md">
+                <img
+                  src="/bjp-header-right.jpeg"
+                  alt="BJP Logo"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </div>
           </div>
         </header>
 
         {activeMenuItem === 'dashboard' && (
-          <section className="px-6 py-4 border-b border-border bg-background mt-4">
+          <section className="px-6 pt-2 pb-1 mt-1">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <StatCard
                 value={statsDisplay.totalVoters}
@@ -453,9 +363,9 @@ const Index = () => {
                 variant="orange"
                 icon={
                   <img
-                    src="https://cdn.pixabay.com/photo/2017/09/07/08/47/people-2728756_960_720.jpg"
+                    src="/stat-total-voters.png"
                     alt="Total voters"
-                    className="w-12 h-12 rounded-full object-cover border-2 border-white/50 shadow-md"
+                    className="w-[3.81rem] h-[3.81rem] rounded-full object-cover border-2 border-white/50 shadow-md scale-110"
                     loading="lazy"
                     referrerPolicy="no-referrer"
                   />
@@ -468,9 +378,9 @@ const Index = () => {
                 variant="blue"
                 icon={
                   <img
-                    src="https://cdn.pixabay.com/photo/2017/06/20/19/22/indian-2424994_960_720.jpg"
+                    src="/stat-male-voters.png"
                     alt="Male voters"
-                    className="w-12 h-12 rounded-full object-cover border-2 border-white/50 shadow-md"
+                    className="w-[3.81rem] h-[3.81rem] rounded-full object-cover border-2 border-white/50 shadow-md scale-110"
                     loading="lazy"
                     referrerPolicy="no-referrer"
                   />
@@ -483,9 +393,9 @@ const Index = () => {
                 variant="green"
                 icon={
                   <img
-                    src="https://cdn.pixabay.com/photo/2017/08/06/13/12/portrait-2590898_960_720.jpg"
+                    src="/stat-female-voters.png"
                     alt="Female voters"
-                    className="w-12 h-12 rounded-full object-cover border-2 border-white/50 shadow-md"
+                    className="w-[3.81rem] h-[3.81rem] rounded-full object-cover border-2 border-white/50 shadow-md scale-110"
                     loading="lazy"
                     referrerPolicy="no-referrer"
                   />
@@ -504,7 +414,7 @@ const Index = () => {
         )}
 
         <div className="flex-1 overflow-y-auto">
-          <div className="p-6 space-y-6 mt-6">
+          <div className="px-6 pb-6 pt-2 space-y-3 mt-0">
             {renderContent()}
           </div>
         </div>

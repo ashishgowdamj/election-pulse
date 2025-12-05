@@ -1,4 +1,4 @@
-import { LayoutDashboard, UserCheck, Home, Award, ChevronLeft, ChevronRight, Users } from 'lucide-react';
+import { LayoutDashboard, ChevronLeft, ChevronRight, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SidebarProps {
@@ -10,8 +10,6 @@ interface SidebarProps {
 
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'voter-gender', label: 'Voter Count on Gender', icon: UserCheck },
-  { id: 'voter-house', label: 'Voter Count on House', icon: Home },
   { id: 'live-voters', label: 'Live Voter Registry', icon: Users },
 ];
 
@@ -30,7 +28,7 @@ const Sidebar = ({ activeItem, onItemClick, collapsed, onToggle }: SidebarProps)
             !collapsed && 'justify-start'
           )}
         >
-          <Award className="w-6 h-6 text-sidebar-primary" aria-hidden="true" />
+          {!collapsed && <span className="tracking-wide">Citizen Connect</span>}
         </div>
         <button
           type="button"

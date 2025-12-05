@@ -36,6 +36,13 @@ const GenderBoothChart = ({ data }: GenderBoothChartProps) => {
                 borderRadius: '8px',
                 fontSize: '12px',
               }}
+              formatter={(value: number, name: string, props) => {
+                const boothTotal =
+                  (props?.payload?.male ?? 0) + (props?.payload?.female ?? 0);
+                const numericValue = Number(value) || 0;
+                const percentage = boothTotal ? ((numericValue / boothTotal) * 100).toFixed(1) : '0.0';
+                return [`${numericValue.toLocaleString()} (${percentage}%)`, name];
+              }}
             />
             <Legend 
               iconType="square"

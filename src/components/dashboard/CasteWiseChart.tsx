@@ -9,6 +9,8 @@ interface CasteWiseChartProps {
 }
 
 const CasteWiseChart = ({ data, onRefresh }: CasteWiseChartProps) => {
+  const total = data.reduce((sum, slice) => sum + slice.value, 0);
+
   return (
     <div className="bg-card rounded-lg p-4 shadow-md">
       <div className="flex items-center justify-between mb-4">
@@ -45,7 +47,11 @@ const CasteWiseChart = ({ data, onRefresh }: CasteWiseChartProps) => {
                 border: '1px solid hsl(var(--border))',
                 borderRadius: '8px',
               }}
-              formatter={(value: number) => [`${value}%`, 'Percentage']}
+              formatter={(value: number, name: string) => {
+                const numericValue = Number(value) || 0;
+                const percentage = total ? ((numericValue / total) * 100).toFixed(1) : '0.0';
+                return [`${numericValue.toLocaleString()} (${percentage}%)`, name];
+              }}
             />
             <Legend
               verticalAlign="bottom"

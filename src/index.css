@@ -107,6 +107,20 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Roboto', sans-serif;
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url('/header-watermark-arch.png');
+    background-repeat: no-repeat;
+    background-size: 90% auto;
+    background-position: center 160px;
+    opacity: 0.04;
+    pointer-events: none;
+    z-index: -1;
   }
 
   h1, h2, h3, h4, h5, h6 {

@@ -109,5 +109,5 @@ export interface PieSlice {
 export interface BarStat {
   label: string;
   value: number;
-  color: string;
+  color?: string;
 }
