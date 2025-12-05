@@ -9,8 +9,8 @@ interface CasteWiseChartProps {
 
 const CasteWiseChart = ({ data, onRefresh }: CasteWiseChartProps) => {
   return (
-    <div className="bg-card rounded-lg p-4 shadow-md">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-card rounded-lg p-6 shadow-lg">
+      <div className="flex items-center justify-between mb-6">
         <h3 className="font-heading font-semibold text-card-foreground">Caste Wise Reports</h3>
         {onRefresh && (
           <button
@@ -21,7 +21,7 @@ const CasteWiseChart = ({ data, onRefresh }: CasteWiseChartProps) => {
           </button>
         )}
       </div>
-      <div className="h-64">
+      <div className="h-80">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
