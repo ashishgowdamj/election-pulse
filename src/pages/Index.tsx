@@ -291,7 +291,12 @@ const Index = () => {
         return (
           <>
             {filterControls}
-            <VoterTable voters={voters} title="Voters Data" />
+            <VoterTable
+              voters={voters}
+              title="Voters Data"
+              filteredCount={voters.length}
+              totalCount={totalVoterCount}
+            />
             <div className="mt-4 text-sm text-muted-foreground text-center">
               {hasVoterData ? (
                 <span>
