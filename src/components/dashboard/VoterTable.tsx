@@ -179,10 +179,10 @@ const VoterTable = ({ voters, title = 'Voters Data' }: VoterTableProps) => {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="overflow-x-auto">
+      <div className="overflow-auto" style={{ height: '400px' }}>
         <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/50">
+          <TableHeader className="sticky top-0 z-10 bg-muted/50">
+            <TableRow>
               {activeColumns.map((column) => (
                 <TableHead key={column.id} className={column.headerClassName}>{column.label}</TableHead>
               ))}
