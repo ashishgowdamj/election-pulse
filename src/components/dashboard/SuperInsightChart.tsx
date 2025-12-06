@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ResponsiveContainer,
   PieChart,
@@ -20,17 +20,17 @@ import {
   LineChart,
   Line,
 } from 'recharts';
-import { RefreshCw } from 'lucide-react';
-import type { CasteData } from '@/types/election';
+import { RefreshCw, ChevronDown, Layers3, BarChart3, Filter } from 'lucide-react';
 import { PIE_ANIMATION_PROPS, BAR_ANIMATION_PROPS } from '@/lib/chart-animations';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuCheckboxItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, Layers3 } from 'lucide-react';
 
 const chartOptions = [
   { id: 'pie', label: 'Pie' },
@@ -42,39 +42,95 @@ const chartOptions = [
   { id: 'radar', label: 'Radar' },
 ] as const;
 
+const fallbackColors = ['#2563eb', '#a855f7', '#10b981', '#f97316', '#0ea5e9', '#f43f5e'];
+
 export type ChartView = (typeof chartOptions)[number]['id'];
+
+export interface InsightSegment {
+  label: string;
+  value: number;
+  color?: string;
+}
+
+export interface InsightDataset {
+  id: string;
+  label: string;
+  description: string;
+  segments: InsightSegment[];
+}
 
 interface SuperInsightChartProps {
   title?: string;
   description?: string;
-  data: CasteData[];
+  datasets: InsightDataset[];
   onRefresh?: () => Promise<void> | void;
 }
 
 const SuperInsightChart = ({
   title = 'Dynamic Insight',
   description = 'Explore caste, language and other splits using your preferred chart style.',
-  data,
+  datasets,
   onRefresh,
 }: SuperInsightChartProps) => {
   const [chartType, setChartType] = useState<ChartView>('pie');
+  const [selectedDatasetId, setSelectedDatasetId] = useState(() => datasets[0]?.id ?? '');
+  const [focusedSegments, setFocusedSegments] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const normalizedData = useMemo(
-    () =>
-      data.map((slice) => ({
-        label: slice.name,
-        value: slice.value,
-        color: slice.color,
-      })),
-    [data]
-  );
+  useEffect(() => {
+    if (!datasets.length) {
+      setSelectedDatasetId('');
+      setFocusedSegments([]);
+      return;
+    }
+    setSelectedDatasetId((current) => {
+      if (current && datasets.some((dataset) => dataset.id === current)) {
+        return current;
+      }
+      return datasets[0].id;
+    });
+  }, [datasets]);
+
+  useEffect(() => {
+    setFocusedSegments([]);
+  }, [selectedDatasetId]);
+
+  const activeDataset = useMemo(() => {
+    if (!datasets.length) return undefined;
+    return datasets.find((dataset) => dataset.id === selectedDatasetId) ?? datasets[0];
+  }, [datasets, selectedDatasetId]);
+
+  const normalizedData = useMemo(() => {
+    if (!activeDataset) return [];
+    const focusSet = new Set(focusedSegments);
+    const baseSegments =
+      focusedSegments.length > 0
+        ? activeDataset.segments.filter((segment) => focusSet.has(segment.label))
+        : activeDataset.segments;
+    return baseSegments.map((segment, index) => ({
+      label: segment.label,
+      value: segment.value,
+      color: segment.color ?? fallbackColors[index % fallbackColors.length],
+    }));
+  }, [activeDataset, focusedSegments]);
 
   const total = normalizedData.reduce((sum, slice) => sum + slice.value, 0);
   const topSegments = useMemo(
     () => [...normalizedData].sort((a, b) => b.value - a.value).slice(0, 10),
     [normalizedData]
   );
+
+  const handleSegmentFocusChange = (segmentLabel: string, nextChecked: boolean) => {
+    setFocusedSegments((previous) => {
+      const result = new Set(previous);
+      if (nextChecked) {
+        result.add(segmentLabel);
+      } else {
+        result.delete(segmentLabel);
+      }
+      return Array.from(result);
+    });
+  };
 
   const handleRefresh = async () => {
     if (!onRefresh || isRefreshing) return;
@@ -86,11 +142,15 @@ const SuperInsightChart = ({
     }
   };
 
+  const activeDescription = activeDataset?.description ?? description;
+  const datasetButtonLabel = activeDataset?.label ?? 'Select view';
+  const focusButtonLabel = focusedSegments.length ? `${focusedSegments.length} focused` : 'All segments';
+
   const chartContent = () => {
     if (!normalizedData.length || !total) {
       return (
         <div className="flex h-full items-center justify-center text-sm text-muted-foreground border border-dashed border-border rounded-2xl">
-          No insight data available for current filters.
+          No {activeDataset?.label?.toLowerCase() ?? 'insight'} data available for current filters.
         </div>
       );
     }
@@ -303,14 +363,77 @@ const SuperInsightChart = ({
   };
 
   return (
-    <section className="bg-card border border-border rounded-3xl p-6 shadow-[0_25px_80px_rgba(15,18,36,0.25)]">
+    <section className="bg-card border border-border rounded-3xl p-8 shadow-[0_25px_90px_rgba(15,18,36,0.3)]">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="uppercase tracking-[0.3em] text-xs text-muted-foreground">Insight spotlight</p>
           <h2 className="text-3xl font-semibold text-foreground">{title}</h2>
-          <p className="mt-2 text-sm text-muted-foreground max-w-2xl">{description}</p>
+          <p className="mt-2 text-sm text-muted-foreground max-w-2xl">{activeDescription}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="rounded-full border-border text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5"
+                disabled={!datasets.length}
+              >
+                <BarChart3 className="h-4 w-4" />
+                <span>{datasetButtonLabel}</span>
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              {datasets.length === 0 && <DropdownMenuItem disabled>No datasets available</DropdownMenuItem>}
+              {datasets.map((dataset) => (
+                <DropdownMenuItem
+                  key={dataset.id}
+                  className={`flex items-center justify-between ${activeDataset?.id === dataset.id ? 'text-foreground font-medium' : ''}`}
+                  onClick={() => setSelectedDatasetId(dataset.id)}
+                >
+                  <span>{dataset.label}</span>
+                  {activeDataset?.id === dataset.id && (
+                    <span className="text-xs text-muted-foreground">(active)</span>
+                  )}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="rounded-full border-border text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5"
+                disabled={!activeDataset || activeDataset.segments.length === 0}
+              >
+                <Filter className="h-4 w-4" />
+                <span>{focusButtonLabel}</span>
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 max-h-72 overflow-y-auto">
+              <DropdownMenuItem onClick={() => setFocusedSegments([])} disabled={!focusedSegments.length}>
+                Show all segments
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {activeDataset?.segments.map((segment) => (
+                <DropdownMenuCheckboxItem
+                  key={segment.label}
+                  checked={focusedSegments.includes(segment.label)}
+                  onCheckedChange={(checked) => handleSegmentFocusChange(segment.label, Boolean(checked))}
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: segment.color ?? '#94a3b8' }} />
+                    <span className="truncate">{segment.label}</span>
+                  </span>
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -352,9 +475,9 @@ const SuperInsightChart = ({
         </div>
       </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-        <div className="min-h-[460px]">{chartContent()}</div>
-        <div className="space-y-4">
+      <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] items-start">
+        <div className="min-h-[520px]">{chartContent()}</div>
+        <div className="space-y-4 lg:-mt-4">
           <div className="rounded-2xl border border-border bg-muted/30 p-4">
             <p className="text-sm uppercase tracking-[0.35em] text-muted-foreground">Total</p>
             <p className="text-4xl font-semibold text-foreground mt-1">{total.toLocaleString()}</p>

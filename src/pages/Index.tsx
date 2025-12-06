@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Building2 } from 'lucide-react';
 import Sidebar from '@/components/dashboard/Sidebar';
 import StatCard from '@/components/dashboard/StatCard';
-import SuperInsightChart from '@/components/dashboard/SuperInsightChart';
+import SuperInsightChart, { type InsightDataset } from '@/components/dashboard/SuperInsightChart';
 import VoterTable from '@/components/dashboard/VoterTable';
 import FilterBar, { FilterValues, defaultFilterOptions, FilterOption } from '@/components/dashboard/FilterBar';
 import { toast } from '@/hooks/use-toast';
@@ -12,7 +12,7 @@ import MiniCasteChart from '@/components/dashboard/MiniCasteChart';
 import MiniLanguageChart from '@/components/dashboard/MiniLanguageChart';
 import MiniAgeChart from '@/components/dashboard/MiniAgeChart';
 import { useCasteBreakdown, useDashboardStats, useGenderAreaBreakdown, useVoters } from '@/hooks/use-dashboard-data';
-import type { VoterStats } from '@/types/election';
+import type { VoterStats, Voter } from '@/types/election';
 import { buildInsightData } from '@/lib/insight-builder';
 
 const slugify = (value: string) =>
@@ -21,6 +21,19 @@ const slugify = (value: string) =>
     .trim()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '') || 'individual';
+
+const insightPalette = ['#2563eb', '#f97316', '#22c55e', '#a855f7', '#0ea5e9', '#f43f5e', '#14b8a6', '#facc15'];
+
+type RawSegment = { label?: string; name?: string; value: number; color?: string };
+
+const toSegments = (items: RawSegment[]) => {
+  const filtered = items.filter((item) => item.value > 0);
+  return filtered.map((item, index) => ({
+    label: item.label ?? item.name ?? `Segment ${index + 1}`,
+    value: item.value,
+    color: item.color ?? insightPalette[index % insightPalette.length],
+  }));
+};
 
 const mergeOptions = (defaults: FilterOption[], extras: FilterOption[]) => {
   const seen = new Set(defaults.map((option) => option.value));
@@ -160,6 +173,113 @@ const Index = () => {
   const insightData = useMemo(() => buildInsightData(voters, statsDisplay), [voters, statsDisplay]);
   const heroInsightData = useMemo(() => buildInsightData(heroVoters, heroStatsDisplay), [heroVoters, heroStatsDisplay]);
   const casteDistributionForInsights = casteDataForCharts.length > 0 ? casteDataForCharts : insightData.casteBreakdown;
+  const superInsightDatasets = useMemo<InsightDataset[]>(() => {
+    const datasets: InsightDataset[] = [];
+    const normalize = (value?: string | null) => {
+      if (!value) return undefined;
+      const trimmed = value.toString().trim();
+      return trimmed.length ? trimmed : undefined;
+    };
+
+    const addDataset = (id: string, label: string, description: string, rawSegments: RawSegment[]) => {
+      const segments = toSegments(rawSegments);
+      if (segments.length) {
+        datasets.push({ id, label, description, segments });
+      }
+    };
+
+    const countBy = (collector: (voter: Voter) => string | undefined): RawSegment[] => {
+      const map = new Map<string, number>();
+      voters.forEach((voter) => {
+        const key = collector(voter);
+        if (!key) return;
+        map.set(key, (map.get(key) ?? 0) + 1);
+      });
+      return Array.from(map.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([label, value]) => ({ label, value }));
+    };
+
+    addDataset(
+      'caste',
+      'Caste',
+      'Community split inside the active filters.',
+      casteDistributionForInsights.map((slice) => ({ label: slice.name, value: slice.value, color: slice.color }))
+    );
+
+    addDataset('gender', 'Gender', 'Gender balance for the currently filtered voters.', insightData.genderDistribution);
+    addDataset(
+      'language',
+      'Language',
+      'Mother tongue share within this selection.',
+      insightData.motherTongueDistribution
+    );
+    addDataset('ward', 'Ward', 'Ward presence across the filtered voters.', insightData.wardDistribution);
+    addDataset('age', 'Age Group', 'Age distribution for the filtered records.', insightData.ageDistribution);
+    addDataset(
+      'ownership',
+      'Ownership',
+      'House ownership mix for the filtered voters.',
+      insightData.houseOwnership
+    );
+
+    addDataset(
+      'booth',
+      'Booth',
+      'Booth coverage across the selected voters.',
+      countBy((voter) => {
+        const booth = normalize(voter.boothName) ?? normalize(voter.boothNo);
+        if (!booth) return undefined;
+        return booth.toLowerCase().startsWith('booth') ? booth : `Booth ${booth}`;
+      })
+    );
+
+    addDataset(
+      'pollingStation',
+      'Polling Station',
+      'Polling station presence for this filtered set.',
+      countBy((voter) => normalize(voter.pollingStation))
+    );
+
+    addDataset(
+      'society',
+      'Society',
+      'Residential clusters represented across the filtered voters.',
+      countBy((voter) => normalize(voter.societyName))
+    );
+
+    addDataset(
+      'ration',
+      'Ration Card',
+      'Ration card coverage inside the current filters.',
+      countBy((voter) => (normalize(voter.rationCardNo) ? 'Has ration card' : 'No ration card'))
+    );
+
+    addDataset(
+      'complaint',
+      'Complaint',
+      'Complaint-tagged families versus clean records.',
+      countBy((voter) => (normalize(voter.complaint) ? 'Complaint logged' : 'No complaint'))
+    );
+
+    addDataset(
+      'voterType',
+      'Voter Type',
+      'Voter type mix (only when provided by the source).',
+      countBy((voter) => {
+        const raw = (voter as Record<string, unknown>).voterType;
+        if (typeof raw !== 'string') return undefined;
+        const cleaned = normalize(raw);
+        if (!cleaned) return undefined;
+        return cleaned
+          .split(' ')
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+      })
+    );
+
+    return datasets;
+  }, [casteDistributionForInsights, insightData, voters]);
   const hasVoterData = voters.length > 0;
   const isFetching =
     statsQuery.isFetching || casteQuery.isFetching || genderQuery.isFetching || voterQuery.isFetching;
@@ -275,10 +395,10 @@ const Index = () => {
 
       <section className="mt-6">
         <SuperInsightChart
-          data={casteDistributionForInsights}
+          datasets={superInsightDatasets}
           onRefresh={() => handleRefresh('insight spotlight')}
-          title="Constituency Composition"
-          description="Dive into filtered caste distribution using pie, donut, bar, area, or radar views. Switch chart types to compare how each community contributes."
+          title="Segment Insights"
+          description="Compare communities across chart styles."
         />
       </section>
 
@@ -328,7 +448,8 @@ const Index = () => {
             <img
               src="/header-watermark-arch.png"
               alt="Arch motif"
-              className="w-full h-full object-cover opacity-[0.5]"
+              className="w-full h-full object-cover opacity-[0.9]"
+              style={{ objectPosition: 'center 35%' }}
               aria-hidden="true"
             />
           </div>

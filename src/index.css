@@ -116,9 +116,9 @@
     inset: 0;
     background-image: url('/header-watermark-arch.png');
     background-repeat: no-repeat;
-    background-size: 90% auto;
-    background-position: center 160px;
-    opacity: 0.04;
+    background-size: cover;
+    background-position: center top;
+    opacity: 0.05;
     pointer-events: none;
     z-index: -1;
   }
