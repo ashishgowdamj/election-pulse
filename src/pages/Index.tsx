@@ -280,6 +280,46 @@ const Index = () => {
 
     return datasets;
   }, [casteDistributionForInsights, insightData, voters]);
+
+  const primaryInsightCards = useMemo(() => {
+    const definitions = [
+      {
+        id: 'caste',
+        title: 'Caste Insight',
+        description: 'Community split inside the active filters.',
+      },
+      {
+        id: 'age',
+        title: 'Age Insight',
+        description: 'Age group mix across the filtered voters.',
+      },
+      {
+        id: 'ward',
+        title: 'Ward Insight',
+        description: 'Ward distribution within the selected population.',
+      },
+      {
+        id: 'language',
+        title: 'Language Insight',
+        description: 'Mother tongue share for these voters.',
+      },
+    ];
+
+    const availableIds = new Set(superInsightDatasets.map((dataset) => dataset.id));
+    const cards = definitions.filter((definition) => availableIds.has(definition.id));
+
+    if (cards.length === 0 && superInsightDatasets.length > 0) {
+      return [
+        {
+          id: superInsightDatasets[0].id,
+          title: 'Segment Insights',
+          description: 'Compare communities across chart styles.',
+        },
+      ];
+    }
+
+    return cards;
+  }, [superInsightDatasets]);
   const hasVoterData = voters.length > 0;
   const isFetching =
     statsQuery.isFetching || casteQuery.isFetching || genderQuery.isFetching || voterQuery.isFetching;
@@ -393,13 +433,17 @@ const Index = () => {
 
       <div className="mt-3">{filterControls}</div>
 
-      <section className="mt-6">
-        <SuperInsightChart
-          datasets={superInsightDatasets}
-          onRefresh={() => handleRefresh('insight spotlight')}
-          title="Segment Insights"
-          description="Compare communities across chart styles."
-        />
+      <section className="mt-6 grid gap-6 xl:grid-cols-2">
+        {primaryInsightCards.map((card) => (
+          <SuperInsightChart
+            key={card.id}
+            datasets={superInsightDatasets}
+            initialDatasetId={card.id}
+            onRefresh={() => handleRefresh(card.title.toLowerCase())}
+            title={card.title}
+            description={card.description}
+          />
+        ))}
       </section>
 
     </>

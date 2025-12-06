@@ -21,6 +21,7 @@ import {
   Line,
 } from 'recharts';
 import { RefreshCw, ChevronDown, Layers3, BarChart3, Filter } from 'lucide-react';
+import PieLegendDropdown, { type LegendItem } from './PieLegendDropdown';
 import { PIE_ANIMATION_PROPS, BAR_ANIMATION_PROPS } from '@/lib/chart-animations';
 import {
   DropdownMenu,
@@ -63,6 +64,7 @@ interface SuperInsightChartProps {
   title?: string;
   description?: string;
   datasets: InsightDataset[];
+  initialDatasetId?: string;
   onRefresh?: () => Promise<void> | void;
 }
 
@@ -70,10 +72,11 @@ const SuperInsightChart = ({
   title = 'Dynamic Insight',
   description = 'Explore caste, language and other splits using your preferred chart style.',
   datasets,
+  initialDatasetId,
   onRefresh,
 }: SuperInsightChartProps) => {
   const [chartType, setChartType] = useState<ChartView>('pie');
-  const [selectedDatasetId, setSelectedDatasetId] = useState(() => datasets[0]?.id ?? '');
+  const [selectedDatasetId, setSelectedDatasetId] = useState(() => initialDatasetId ?? datasets[0]?.id ?? '');
   const [focusedSegments, setFocusedSegments] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -84,12 +87,16 @@ const SuperInsightChart = ({
       return;
     }
     setSelectedDatasetId((current) => {
-      if (current && datasets.some((dataset) => dataset.id === current)) {
+      const hasCurrent = current && datasets.some((dataset) => dataset.id === current);
+      if (hasCurrent) {
         return current;
+      }
+      if (initialDatasetId && datasets.some((dataset) => dataset.id === initialDatasetId)) {
+        return initialDatasetId;
       }
       return datasets[0].id;
     });
-  }, [datasets]);
+  }, [datasets, initialDatasetId]);
 
   useEffect(() => {
     setFocusedSegments([]);
@@ -118,6 +125,18 @@ const SuperInsightChart = ({
   const topSegments = useMemo(
     () => [...normalizedData].sort((a, b) => b.value - a.value).slice(0, 10),
     [normalizedData]
+  );
+  const legendItems = useMemo<LegendItem[]>(
+    () =>
+      total
+        ? normalizedData.map((slice) => ({
+            label: slice.label,
+            value: slice.value,
+            percentage: total ? ((slice.value / total) * 100).toFixed(1) : '0.0',
+            color: slice.color,
+          }))
+        : [],
+    [normalizedData, total]
   );
 
   const handleSegmentFocusChange = (segmentLabel: string, nextChecked: boolean) => {
@@ -483,27 +502,34 @@ const SuperInsightChart = ({
             <p className="text-4xl font-semibold text-foreground mt-1">{total.toLocaleString()}</p>
             <p className="text-sm text-muted-foreground">records represented</p>
           </div>
-          <div className="rounded-2xl border border-border bg-muted/20 p-4 h-[320px] overflow-y-auto">
-            <p className="text-sm font-medium text-foreground mb-3">Top segments</p>
-            <div className="space-y-3">
-              {topSegments.map((slice) => {
-                const percentage = total ? ((slice.value / total) * 100).toFixed(1) : '0.0';
-                return (
-                  <div key={slice.label} className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: slice.color }} />
-                      <span className="text-sm text-muted-foreground truncate">{slice.label}</span>
-                    </div>
-                    <span className="text-sm text-foreground whitespace-nowrap">
-                      {slice.value.toLocaleString()} ({percentage}%)
-                    </span>
-                  </div>
-                );
-              })}
+          <div className="rounded-2xl border border-border bg-muted/20 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-foreground">Legend</p>
+                <p className="text-xs text-muted-foreground">View segment share</p>
+              </div>
+              <PieLegendDropdown items={legendItems} triggerLabel="Open legend" />
             </div>
+            {topSegments.length > 0 && (
+              <div className="mt-4 space-y-2">
+                {topSegments.slice(0, 4).map((slice) => {
+                  const percentage = total ? ((slice.value / total) * 100).toFixed(1) : '0.0';
+                  return (
+                    <div key={slice.label} className="flex items-center justify-between gap-2 text-sm">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: slice.color }} />
+                        <span className="text-muted-foreground truncate">{slice.label}</span>
+                      </div>
+                      <span className="text-foreground whitespace-nowrap">{slice.value.toLocaleString()} ({percentage}%)</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>
+
     </section>
   );
 };
