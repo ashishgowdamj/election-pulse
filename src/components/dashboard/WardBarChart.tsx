@@ -1,17 +1,31 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
-import type { BarStat } from '@/types/election';
-import { BAR_ANIMATION_PROPS } from '@/lib/chart-animations';
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
+import type { PieSlice } from '@/types/election';
+import { PIE_ANIMATION_PROPS } from '@/lib/chart-animations';
+import PieLegendDropdown, { type LegendItem } from './PieLegendDropdown';
 
 interface WardBarChartProps {
-  data: BarStat[];
+  data: PieSlice[];
   onRefresh?: () => Promise<void> | void;
 }
 
 const WardBarChart = ({ data, onRefresh }: WardBarChartProps) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const hasData = data.length > 0;
+  const total = data.reduce((sum, slice) => sum + slice.value, 0);
+  const hasData = data.length > 0 && total > 0;
+  const legendItems = useMemo<LegendItem[]>(
+    () =>
+      hasData
+        ? data.map((slice) => ({
+            label: slice.label,
+            value: slice.value,
+            percentage: ((slice.value / total) * 100).toFixed(1),
+            color: slice.color,
+          }))
+        : [],
+    [data, hasData, total]
+  );
 
   const handleRefreshClick = async () => {
     if (!onRefresh || isRefreshing) return;
@@ -25,51 +39,56 @@ const WardBarChart = ({ data, onRefresh }: WardBarChartProps) => {
 
   return (
     <section className="bg-card border border-border rounded-2xl p-5 shadow-sm h-full">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 gap-3">
         <div>
           <h3 className="text-xl font-semibold text-foreground">Wards</h3>
         </div>
-        {onRefresh && (
-          <button
-            type="button"
-            onClick={handleRefreshClick}
-            className="text-xs px-2 py-1 rounded-full border border-border text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
-            aria-label="Refresh ward chart"
-            aria-busy={isRefreshing}
-            disabled={isRefreshing}
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span>Refresh</span>
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {hasData && <PieLegendDropdown items={legendItems} triggerLabel="Legend" />}
+          {onRefresh && (
+            <button
+              type="button"
+              onClick={handleRefreshClick}
+              className="text-xs px-2 py-1 rounded-full border border-border text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+              aria-label="Refresh ward chart"
+              aria-busy={isRefreshing}
+              disabled={isRefreshing}
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </button>
+          )}
+        </div>
       </div>
       <div className="h-72">
         {hasData ? (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={{ top: 10, right: 8, left: -28, bottom: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-              <XAxis
-                dataKey="label"
-                stroke="hsl(var(--muted-foreground))"
-                tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                tickLine={false}
-              />
-              <YAxis
-                stroke="hsl(var(--muted-foreground))"
-                tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                tickLine={false}
-                allowDecimals={false}
-              />
+            <PieChart margin={{ top: 0, right: 16, bottom: 0, left: 16 }}>
+              <Pie
+                data={data}
+                dataKey="value"
+                nameKey="label"
+                cx="50%"
+                cy="50%"
+                innerRadius={0}
+                outerRadius={110}
+                paddingAngle={2}
+                strokeWidth={0}
+                {...PIE_ANIMATION_PROPS}
+              >
+                {data.map((slice) => (
+                  <Cell key={slice.label} fill={slice.color} />
+                ))}
+              </Pie>
               <Tooltip
                 contentStyle={{
                   backgroundColor: 'hsl(var(--card))',
                   border: '1px solid hsl(var(--border))',
                   borderRadius: '0.75rem',
-                  color: 'hsl(var(--foreground))',
                 }}
+                formatter={(value: number, name: string) => [`${Number(value).toLocaleString()} voters`, name]}
               />
-              <Bar dataKey="value" radius={[6, 6, 0, 0]} fill="hsl(var(--stat-blue))" {...BAR_ANIMATION_PROPS} />
-            </BarChart>
+            </PieChart>
           </ResponsiveContainer>
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-muted-foreground border border-dashed border-border rounded-2xl">

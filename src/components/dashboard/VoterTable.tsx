@@ -266,7 +266,7 @@ const VoterTable = ({ voters, title = 'Voters Data', filteredCount, totalCount }
           </DropdownMenu>
         </div>
       </div>
-      <div className="overflow-auto" style={{ height: '400px' }}>
+      <div className="overflow-x-auto">
         <Table>
           <TableHeader className="sticky top-0 z-10 bg-muted/50">
             <TableRow>

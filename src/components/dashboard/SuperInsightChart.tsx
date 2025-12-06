@@ -476,7 +476,7 @@ const SuperInsightChart = ({
       </div>
 
       <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] items-start">
-        <div className="min-h-[520px]">{chartContent()}</div>
+        <div className="min-h-[520px] h-[520px]">{chartContent()}</div>
         <div className="space-y-4 lg:-mt-4">
           <div className="rounded-2xl border border-border bg-muted/30 p-4">
             <p className="text-sm uppercase tracking-[0.35em] text-muted-foreground">Total</p>

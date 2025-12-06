@@ -77,7 +77,7 @@ const emptyStats: VoterStats = {
 const Index = () => {
   const [activeMenuItem, setActiveMenuItem] = useState('dashboard');
   const [filters, setFilters] = useState<FilterValues>({ ...initialFilters });
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
 
   const statsQuery = useDashboardStats(filters);
   const casteQuery = useCasteBreakdown(filters);
@@ -464,7 +464,7 @@ const Index = () => {
               </div>
             </div>
             <div className="flex-1 text-center">
-              <p className="text-5xl font-black tracking-[0.25em] uppercase text-foreground [text-shadow:_0_0_12px_rgba(255,165,0,0.45)]">
+              <p className="text-5xl font-extrabold tracking-[0.3em] uppercase text-white drop-shadow-[0_4px_18px_rgba(0,0,0,0.85)] [text-shadow:_0_0_14px_rgba(255,255,255,0.75)]">
                 Man of Humanity
               </p>
             </div>
