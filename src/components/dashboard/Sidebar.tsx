@@ -1,4 +1,4 @@
-import { LayoutDashboard, ChevronLeft, ChevronRight, Users } from 'lucide-react';
+import { LayoutDashboard, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SidebarProps {
@@ -17,27 +17,28 @@ const Sidebar = ({ activeItem, onItemClick, collapsed, onToggle }: SidebarProps)
   return (
     <aside
       className={cn(
-        'min-h-screen sidebar-gradient text-sidebar-foreground flex-shrink-0 transition-all duration-300',
+        'min-h-screen sidebar-gradient text-sidebar-foreground flex-shrink-0 transition-all duration-300 group',
         collapsed ? 'w-20' : 'w-64'
       )}
+      onMouseEnter={() => {
+        if (collapsed) {
+          onToggle();
+        }
+      }}
+      onMouseLeave={() => {
+        if (!collapsed) {
+          onToggle();
+        }
+      }}
     >
-      <div className="p-4 border-b border-sidebar-border flex items-center justify-between gap-2">
-        <div
-          className={cn(
-            'text-xl font-bold font-heading text-sidebar-foreground flex items-center justify-center w-full',
-            !collapsed && 'justify-start'
-          )}
-        >
-          {!collapsed && <span className="tracking-wide">Citizen Connect</span>}
-        </div>
-        <button
-          type="button"
-          onClick={onToggle}
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="p-2 rounded-md bg-sidebar-accent/40 text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
-        >
-          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-        </button>
+      <div className={cn('p-4 flex items-center', collapsed ? 'justify-center' : 'justify-start')}>
+        {collapsed ? (
+          <div className="text-xl font-bold font-heading text-sidebar-foreground flex items-center justify-center w-12 h-12 rounded-lg bg-sidebar-accent/30 border border-sidebar-border">
+            CC
+          </div>
+        ) : (
+          <span className="text-xl font-bold font-heading text-sidebar-foreground">Citizen Connect</span>
+        )}
       </div>
       <nav className="p-2">
         <ul className="space-y-1">
